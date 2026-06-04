@@ -11,7 +11,10 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "connecthub_secret_key_12345!";
-const DB_FILE = path.join(process.cwd(), "db.json");
+// Handle Vercel's read-only filesystem by using /tmp for the database
+const IS_VERCEL = !!process.env.VERCEL;
+const BASE_DB_FILE = path.join(process.cwd(), "db.json");
+const DB_FILE = IS_VERCEL ? path.join("/tmp", "db.json") : BASE_DB_FILE;
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -60,8 +63,17 @@ const initialDB: DBState = {
 // Database Read/Write helpers
 function readDB(): DBState {
   if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), "utf8");
-    return initialDB;
+    // If we're on Vercel and the /tmp/db.json doesn't exist, try to seed it from the repo's db.json
+    if (IS_VERCEL && fs.existsSync(BASE_DB_FILE)) {
+      try {
+        fs.writeFileSync(DB_FILE, fs.readFileSync(BASE_DB_FILE));
+      } catch (e) {
+        console.error("Failed to seed database to /tmp", e);
+      }
+    } else {
+      fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), "utf8");
+      return initialDB;
+    }
   }
   try {
     const data = fs.readFileSync(DB_FILE, "utf8");
