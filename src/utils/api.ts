@@ -26,6 +26,7 @@ function getHeaders(): HeadersInit {
 export const api = {
   // Auth
   async register(params: any): Promise<AuthResponse> {
+    console.log("[API] Registering user:", params.email);
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -33,6 +34,7 @@ export const api = {
     });
     const data = await safeJson(res);
     if (!res.ok) {
+      console.error("[API] Registration failed:", data.error);
       throw new Error(data.error || "Failed to register");
     }
     localStorage.setItem("connecthub_token", data.token);
@@ -55,6 +57,7 @@ export const api = {
 
 
   async login(params: any): Promise<AuthResponse> {
+    console.log("[API] Logging in user:", params.email);
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -62,6 +65,7 @@ export const api = {
     });
     const data = await safeJson(res);
     if (!res.ok) {
+      console.error("[API] Login failed:", data.error);
       throw new Error(data.error || "Failed to login");
     }
     localStorage.setItem("connecthub_token", data.token);

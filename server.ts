@@ -16,6 +16,9 @@ const IS_VERCEL = !!process.env.VERCEL;
 const BASE_DB_FILE = path.join(process.cwd(), "db.json");
 const DB_FILE = IS_VERCEL ? path.join("/tmp", "db.json") : BASE_DB_FILE;
 
+console.log(`[Server] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`);
+console.log(`[Server] Using DB path: ${DB_FILE}`);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -133,7 +136,10 @@ app.post("/api/auth/send-otp", (req, res) => {
 // Auth Endpoint: Register (Simplified)
 app.post("/api/auth/register", (req, res) => {
   const { username, displayName, email, password } = req.body;
+  console.log(`[Auth] Register attempt for: ${email} (${username})`);
+
   if (!username || !displayName || !email || !password) {
+    console.error("[Auth] Missing required fields for registration");
     return res.status(400).json({ error: "All fields are required" });
   }
 
@@ -143,9 +149,11 @@ app.post("/api/auth/register", (req, res) => {
   const usernameExists = db.users.some(u => u.username.toLowerCase() === username.toLowerCase());
 
   if (emailExists) {
+    console.error(`[Auth] Email already registered: ${emailLower}`);
     return res.status(400).json({ error: "Email is already registered" });
   }
   if (usernameExists) {
+    console.error(`[Auth] Username already taken: ${username}`);
     return res.status(400).json({ error: "Username is already taken" });
   }
 
@@ -182,6 +190,8 @@ app.post("/api/auth/register", (req, res) => {
 // Auth Endpoint: Login
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
+  console.log(`[Auth] Login attempt for: ${email}`);
+
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
@@ -190,11 +200,13 @@ app.post("/api/auth/login", (req, res) => {
   const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase() || u.username.toLowerCase() === email.toLowerCase());
 
   if (!user) {
+    console.error(`[Auth] User not found: ${email}`);
     return res.status(400).json({ error: "Invalid credentials" });
   }
 
   const isMatch = bcrypt.compareSync(password, user.password);
   if (!isMatch) {
+    console.error(`[Auth] Password mismatch for: ${email}`);
     return res.status(400).json({ error: "Invalid credentials" });
   }
 
