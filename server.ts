@@ -9,18 +9,19 @@ import { createServer as createViteServer } from "vite";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "connecthub_secret_key_12345!";
-// In-memory fallback for Vercel to ensure state exists even if files fail
-let memoryDB: DBState | null = null;
 
 // Determine the root of the project to find db.json
-const dirname = path.dirname(new URL(import.meta.url).pathname);
-const rootPath = process.platform === "win32" ? dirname.substring(1) : dirname;
+// Use process.cwd() as it's the most reliable across ESM/CJS bundles on Render/Vercel
+const rootPath = process.cwd();
 
 const IS_VERCEL = !!process.env.VERCEL;
 const BASE_DB_FILE = path.join(rootPath, "db.json");
 const DB_FILE = IS_VERCEL ? path.join("/tmp", "db.json") : BASE_DB_FILE;
+
+// In-memory fallback for Vercel to ensure state exists even if files fail
+let memoryDB: DBState | null = null;
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
