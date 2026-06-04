@@ -834,7 +834,7 @@ async function startServer() {
   // Only listen if not being imported as a module (e.g. by Vercel)
   if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
-      const url = process.env.NODE_ENV === "production" ? "https://social-media-platform-0xwc.onrender.com" : `http://localhost:${PORT}`;
+      const url = process.env.NODE_ENV === "production" ? "https://social-media-platform-1-i768.onrender.com" : `http://localhost:${PORT}`;
       console.log(`ConnectHub fullstack server running at ${url}`);
     });
   }
