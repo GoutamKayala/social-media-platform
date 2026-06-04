@@ -16,8 +16,12 @@ const IS_VERCEL = !!process.env.VERCEL;
 const BASE_DB_FILE = path.join(process.cwd(), "db.json");
 const DB_FILE = IS_VERCEL ? path.join("/tmp", "db.json") : BASE_DB_FILE;
 
+// In-memory fallback for Vercel to ensure state exists even if files fail
+let memoryDB: DBState | null = null;
+
 console.log(`[Server] Environment: ${IS_VERCEL ? 'Vercel' : 'Local'}`);
-console.log(`[Server] Using DB path: ${DB_FILE}`);
+console.log(`[Server] Base DB path: ${BASE_DB_FILE}`);
+console.log(`[Server] Active DB path: ${DB_FILE}`);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -65,37 +69,57 @@ const initialDB: DBState = {
 
 // Database Read/Write helpers
 function readDB(): DBState {
+  // 1. Try memory first if it's already initialized
+  if (memoryDB) return memoryDB;
+
+  // 2. Try filesystem
   if (!fs.existsSync(DB_FILE)) {
-    // If we're on Vercel and the /tmp/db.json doesn't exist, try to seed it from the repo's db.json
+    console.log(`[DB] DB file not found at ${DB_FILE}`);
+    // On Vercel, seed from root to /tmp if possible
     if (IS_VERCEL && fs.existsSync(BASE_DB_FILE)) {
       try {
-        fs.writeFileSync(DB_FILE, fs.readFileSync(BASE_DB_FILE));
+        console.log(`[DB] Seeding /tmp/db.json from ${BASE_DB_FILE}`);
+        const content = fs.readFileSync(BASE_DB_FILE);
+        fs.writeFileSync(DB_FILE, content);
       } catch (e) {
-        console.error("Failed to seed database to /tmp", e);
+        console.error("[DB] Failed to seed database to /tmp", e);
       }
-    } else {
+    } else if (!IS_VERCEL) {
+      console.log("[DB] Initializing new local database");
       fs.writeFileSync(DB_FILE, JSON.stringify(initialDB, null, 2), "utf8");
+      memoryDB = initialDB;
       return initialDB;
     }
   }
+
   try {
-    const data = fs.readFileSync(DB_FILE, "utf8");
-    return JSON.parse(data);
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, "utf8");
+      memoryDB = JSON.parse(data);
+      console.log(`[DB] Successfully loaded DB with ${memoryDB?.users.length} users`);
+      return memoryDB!;
+    }
   } catch (error) {
-    console.error("Error reading database file, resetting to initial details", error);
-    return initialDB;
+    console.error("[DB] Error reading database file", error);
   }
+
+  // 3. Absolute fallback to initial mock state
+  console.log("[DB] Falling back to initial mock state");
+  memoryDB = initialDB;
+  return initialDB;
 }
 
 function writeDB(data: DBState) {
+  memoryDB = data;
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
+    console.log(`[DB] Successfully saved DB to ${DB_FILE}`);
   } catch (err) {
-    console.error("Error writing to database file", err);
+    console.error("[DB] Error writing to database file (non-critical if in-memory works)", err);
   }
 }
 
-// Ensure DB is initialized
+// Ensure DB is initialized immediately
 readDB();
 
 // Authentication middleware
@@ -131,6 +155,18 @@ app.post("/api/auth/send-otp", (req, res) => {
 
   console.log(`[AUTH] OTP for ${email}: ${code}`);
   res.json({ success: true, message: "Verification code sent to your email" });
+});
+
+// 0. Diagnostic Endpoint
+app.get("/api/status", (req, res) => {
+  const db = readDB();
+  res.json({
+    status: "healthy",
+    environment: IS_VERCEL ? "vercel" : "local",
+    db_path: DB_FILE,
+    users_count: db.users.length,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Auth Endpoint: Register (Simplified)
