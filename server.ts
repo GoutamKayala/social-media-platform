@@ -812,6 +812,9 @@ app.post("/api/messages", authenticateToken, (req: any, res) => {
   res.status(201).json(newMessage);
 });
 
+// Export the app for Vercel serverless environment
+export default app;
+
 // Integrate custom Vite middleware for full stack application development
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
@@ -828,9 +831,16 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`ConnectHub fullstack server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  });
+  // Only listen if not being imported as a module (e.g. by Vercel)
+  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      const url = process.env.NODE_ENV === "production" ? "https://social-media-platform-0xwc.onrender.com" : `http://localhost:${PORT}`;
+      console.log(`ConnectHub fullstack server running at ${url}`);
+    });
+  }
 }
 
-startServer();
+// Only start the server if we're not running on Vercel (which uses the export)
+if (!process.env.VERCEL) {
+  startServer();
+}

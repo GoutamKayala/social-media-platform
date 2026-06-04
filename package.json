@@ -2,6 +2,7 @@
   "name": "react-example",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://social-media-platform-0xwc.onrender.com",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
