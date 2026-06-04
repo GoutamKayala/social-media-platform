@@ -1,7 +1,10 @@
 /// <reference types="vite/client" />
 import { User, Post, Comment, Notification, Message, AuthResponse } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const envUrl = import.meta.env.VITE_API_URL;
+const API_BASE = envUrl
+  ? (envUrl.endsWith("/api") ? envUrl : (envUrl.endsWith("/") ? `${envUrl}api` : `${envUrl}/api`))
+  : "/api";
 
 async function safeJson(res: Response) {
   const text = await res.text();

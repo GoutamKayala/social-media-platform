@@ -28,12 +28,15 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Robust CORS middleware for cross-platform deployment (Vercel <-> Render)
 app.use((req, res, next) => {
+  // Allow all origins to facilitate Vercel-Render communication
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
 
   // Handle pre-flight OPTIONS requests
   if (req.method === "OPTIONS") {
+    console.log(`[CORS] Handling pre-flight for ${req.path}`);
     return res.sendStatus(200);
   }
   next();
