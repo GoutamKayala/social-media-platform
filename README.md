@@ -3,8 +3,7 @@
 A modern, responsive, and seamless Single Page Application (SPA) social network platform.
 
 ## Deployment
-Live Site: [https://social-media-platform-1-i768.onrender.com](https://social-media-platform-1-i768.onrender.com)
-
+Live Site: connecthub-six-dusky.vercel.app
 ## Features
 - **Seamless SPA:** No page refreshes for likes, comments, or navigation.
 - **Full-Stack:** Express server with a React (Vite) frontend.
